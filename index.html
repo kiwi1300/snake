@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definitive Snake Game Engine</title>
+    <style>
+        body {
+            background-color: #1a1a24;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 5px 0 15px 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+            color: #4caf50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .layout-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* --- LEFT COLUMN: CONFIGURATION PANEL --- */
+        .config-panel {
+            background-color: #242432;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            width: 320px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 2px solid #3d3d5c;
+            padding-bottom: 8px;
+            margin: 0;
+            color: #00bcd4;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setting-group label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaaaaa;
+        }
+
+        .setting-group select, .setting-group input {
+            background-color: #1a1a24;
+            color: white;
+            border: 1px solid #3d3d5c;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .setting-group select:focus, .setting-group input:focus {
+            border-color: #00bcd4;
+        }
+
+        /* --- CENTER COLUMN: GAME VIEW --- */
+        .game-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-bar {
+            background-color: #242432;
+            width: 480px;
+            padding: 12px 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-bottom: 2px solid #1a1a24;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .hud-stat {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-stat span {
+            color: #00bcd4;
+        }
+
+        #game-viewport {
+            width: 480px;
+            height: 480px;
+            background-color: #0d0d13;
+            position: relative;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* Elements inside Viewport */
+        .grid-cell {
+            position: absolute;
+            box-sizing: border-box;
+        }
+
+        .snake-segment {
+            border-radius: 4px;
+            z-index: 3;
+            transition: background-color 0.3s;
+        }
+
+        .food-pellet {
+            border-radius: 50%;
+            z-index: 2;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); }
+            100% { transform: scale(1.1); }
+        }
+
+        .obstacle-wall {
+            background-color: #555577;
+            border: 1px solid #777799;
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        /* Screen overlays */
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(13, 13, 19, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            gap: 15px;
+        }
+
+        .overlay-headline {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff5252;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255,82,82,0.4);
+        }
+
+        .overlay-sub {
+            font-size: 14px;
+            color: #aaaaaa;
+            margin: -5px 0 10px 0;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .primary-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(76,175,80,0.3);
+        }
+
+        .primary-btn:hover { background-color: #45a049; }
+        .primary-btn:active { transform: scale(0.98); }
+
+        .danger-btn {
+            background-color: #ff5252;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .danger-btn:hover { background-color: #e04545; }
+
+        /* --- RIGHT COLUMN: LEADERBOARD --- */
+        .leaderboard-panel {
+            background-color: #242432;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            width: 220px;
+            box-sizing: border-box;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #3d3d5c;
+        }
+
+        .leaderboard-item.top {
+            color: #ffd700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>SNAKE ENGINE ARCHITECTURE</h1>
+
+    <div class="layout-container">
+        
+        <div class="config-panel">
+            <p class="panel-title">Mechanic Rulebook</p>
+            
+            <div class="setting-group">
+                <label>Movement Boundary Mode</label>
+                <select id="setting-boundary">
+                    <option value="classic">Solid Walls (Game Over)</option>
+                    <option value="wrap">Infinite Mode (Wrap-around)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Environment Modifiers</label>
+                <select id="setting-environment">
+                    <option value="empty">Empty Arena</option>
+                    <option value="maze">Obstacle Mode (Internal Walls)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Velocity Progression</label>
+                <select id="setting-speed">
+                    <option value="constant">Fixed Pacing</option>
+                    <option value="progressive">Increasing Speed (Adaptive)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Spawn Density (Fruit Count)</label>
+                <input type="number" id="setting-food-count" value="1" min="1" max="15">
+            </div>
+
+            <div class="setting-group">
+                <label>Cosmetic Skin Selector</label>
+                <select id="setting-skin">
+                    <option value="#4caf50">Cyber Green</option>
+                    <option value="#00bcd4">Neon Turquoise</option>
+                    <option value="#e040fb">Electric Orchid</option>
+                    <option value="#ff9100">Sol-Flare Orange</option>
+                </select>
+            </div>
+
+            <button class="danger-btn" onclick="forceTerminateRound()">Abort / End Round</button>
+        </div>
+
+        <div class="game-column">
+            <div class="hud-bar">
+                <div class="hud-stat">Score: <span id="stat-score">0</span></div>
+                <div class="hud-stat">Max Length: <span id="stat-high">0</span></div>
+            </div>
+
+            <div id="game-viewport">
+                <div id="ui-overlay" class="screen-overlay">
+                    <h2 id="overlay-title" class="overlay-headline">Snake Arena</h2>
+                    <p id="overlay-desc" class="overlay-sub">Steer with Arrow Keys or WASD. Consume items to grow and maximize scoring yields.</p>
+                    <button class="primary-btn" onclick="initializeSession()">Launch Match</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard-panel">
+            <p class="panel-title">Server Rankings</p>
+            <ul id="leaderboard" class="leaderboard-list"></ul>
+        </div>
+
+    </div>
+
+    <script>
+        const viewport = document.getElementById('game-viewport');
+        const overlay = document.getElementById('ui-overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const scoreTracker = document.getElementById('stat-score');
+        const localHighTracker = document.getElementById('stat-high');
+        const leaderboardContainer = document.getElementById('leaderboard');
+
+        // Rule references
+        const ruleBoundary = document.getElementById('setting-boundary');
+        const ruleEnv = document.getElementById('setting-environment');
+        const ruleSpeed = document.getElementById('setting-speed');
+        const ruleFoodCount = document.getElementById('setting-food-count');
+        const ruleSkin = document.getElementById('setting-skin');
+
+        // Dimensions configurations
+        const resolutionSize = 24; 
+        const matrixGridDimension = 20; 
+
+        // State machine vectors
+        let physicalSnakeChain = [];
+        let itemPelletRegistry = [];
+        let structuralStaticWalls = [];
+        let velocityVector = { x: 1, y: 0 };
+        let directionalInputBuffer = { x: 1, y: 0 };
+        
+        let pointScore = 0;
+        let operationEngineLoop = null;
+        let activeTickMiliseconds = 130;
+        let executionActive = false;
+
+        function buildStructuralEnvironment() {
+            structuralStaticWalls = [];
+            if (ruleEnv.value === 'maze') {
+                // Generates standardized structural corner interior blocker patterns
+                for(let i = 4; i < 8; i++) {
+                    structuralStaticWalls.push({x: i, y: 4});
+                    structuralStaticWalls.push({x: matrixGridDimension - 1 - i, y: 4});
+                    structuralStaticWalls.push({x: i, y: matrixGridDimension - 5});
+                    structuralStaticWalls.push({x: matrixGridDimension - 1 - i, y: matrixGridDimension - 5});
+                }
+            }
+        }
+
+        function spawnItemPellet() {
+            let coordinatePayload = null;
+            let validatedClearance = false;
+
+            while (!validatedClearance) {
+                coordinatePayload = {
+                    x: Math.floor(Math.random() * matrixGridDimension),
+                    y: Math.floor(Math.random() * matrixGridDimension)
+                };
+
+                // Check overlap with snake segments
+                let snakeHit = physicalSnakeChain.some(seg => seg.x === coordinatePayload.x && seg.y === coordinatePayload.y);
+                // Check overlap with existing food items
+                let foodHit = itemPelletRegistry.some(item => item.x === coordinatePayload.x && item.y === coordinatePayload.y);
+                // Check overlap with static environment blocks
+                let wallHit = structuralStaticWalls.some(wall => wall.x === coordinatePayload.x && wall.y === coordinatePayload.y);
+
+                if (!snakeHit && !foodHit && !wallHit) {
+                    validatedClearance = true;
+                }
+            }
+            itemPelletRegistry.push(coordinatePayload);
+        }
+
+        function drawFrame() {
+            // Scrub standard game classes via viewport references 
+            document.querySelectorAll('.snake-segment, .food-pellet, .obstacle-wall').forEach(node => node.remove());
+
+            // Draw internal walls
+            structuralStaticWalls.forEach(wall => {
+                const node = document.createElement('div');
+                node.className = 'grid-cell obstacle-wall';
+                node.style.width = `${resolutionSize}px`;
+                node.style.height = `${resolutionSize}px`;
+                node.style.left = `${wall.x * resolutionSize}px`;
+                node.style.top = `${wall.y * resolutionSize}px`;
+                viewport.appendChild(node);
+            });
+
+            // Draw item pellets
+            itemPelletRegistry.forEach(item => {
+                const node = document.createElement('div');
+                node.className = 'grid-cell food-pellet';
+                node.style.width = `${resolutionSize}px`;
+                node.style.height = `${resolutionSize}px`;
+                node.style.left = `${item.x * resolutionSize}px`;
+                node.style.top = `${item.y * resolutionSize}px`;
+                node.textContent = "🍎";
+                viewport.appendChild(node);
+            });
+
+            // Draw snake segments
+            physicalSnakeChain.forEach((segment, index) => {
+                const node = document.createElement('div');
+                node.className = 'grid-cell snake-segment';
+                node.style.width = `${resolutionSize}px`;
+                node.style.height = `${resolutionSize}px`;
+                node.style.left = `${segment.x * resolutionSize}px`;
+                node.style.top = `${segment.y * resolutionSize}px`;
+                
+                // Color mapping rules based on configuration skin profiles
+                if (index === 0) {
+                    node.style.backgroundColor = '#ffffff'; // Emphasizes head unit explicitly
+                    node.style.boxShadow = `0 0 8px ${ruleSkin.value}`;
+                } else {
+                    node.style.backgroundColor = ruleSkin.value;
+                }
+                viewport.appendChild(node);
+            });
+        }
+
+        function processingTick() {
+            // Apply verified buffered input direction directly to avoid quick-tap self-collisions
+            velocityVector = directionalInputBuffer;
+
+            // Generate structural head position vector parameters
+            const calculatedHead = {
+                x: physicalSnakeChain[0].x + velocityVector.x,
+                y: physicalSnakeChain[0].y + velocityVector.y
+            };
+
+            // Boundary evaluation processing mechanics
+            if (ruleBoundary.value === 'wrap') {
+                if (calculatedHead.x < 0) calculatedHead.x = matrixGridDimension - 1;
+                else if (calculatedHead.x >= matrixGridDimension) calculatedHead.x = 0;
+
+                if (calculatedHead.y < 0) calculatedHead.y = matrixGridDimension - 1;
+                else if (calculatedHead.y >= matrixGridDimension) calculatedHead.y = 0;
+            } else {
+                // Classic hard crash bounds evaluations checks
+                if (calculatedHead.x < 0 || calculatedHead.x >= matrixGridDimension || 
+                    calculatedHead.y < 0 || calculatedHead.y >= matrixGridDimension) {
+                    executeGameTermination("Wall Collision Crash!");
+                    return;
+                }
+            }
+
+            // Body self-collision checks
+            let selfBiteCollision = physicalSnakeChain.some((seg, idx) => idx !== 0 && seg.x === calculatedHead.x && seg.y === calculatedHead.y);
+            if (selfBiteCollision) {
+                executeGameTermination("Self-Collision Impact!");
+                return;
+            }
+
+            // Static wall hurdle impact verification checks
+            let wallImpactCollision = structuralStaticWalls.some(wall => wall.x === calculatedHead.x && wall.y === calculatedHead.y);
+            if (wallImpactCollision) {
+                executeGameTermination("Hurdle Structure Impact!");
+                return;
+            }
+
+            // Inject next calculated head position configuration state
+            physicalSnakeChain.unshift(calculatedHead);
+
+            // Item ingestion check processing loop steps
+            let ingestedTargetIdx = itemPelletRegistry.findIndex(item => item.x === calculatedHead.x && item.y === calculatedHead.y);
+
+            if (ingestedTargetIdx !== -1) {
+                pointScore++;
+                scoreTracker.textContent = pointScore;
+                itemPelletRegistry.splice(ingestedTargetIdx, 1);
+                spawnItemPellet();
+
+                // Dynamic pacing evaluation update processing
+                if (ruleSpeed.value === 'progressive') {
+                    adjustEnginePacing();
+                }
+            } else {
+                // Normal frame translation step clears oldest segment allocation mapping tracking points
+                physicalSnakeChain.pop();
+            }
+
+            // Check if grid is full (Rare Victory condition)
+            const maximumTotalCapacityTiles = (matrixGridDimension * matrixGridDimension) - structuralStaticWalls.length;
+            if (physicalSnakeChain.length >= maximumTotalCapacityTiles) {
+                executeGameTermination("Flawless Grid Domination!", true);
+                return;
+            }
+
+            drawFrame();
+        }
+
+        function adjustEnginePacing() {
+            // Linear incremental velocity modifier drops frame processing delay times dynamically
+            let calculatedSpeedOffsetBase = 130 - (pointScore * 3);
+            activeTickMiliseconds = Math.max(calculatedSpeedOffsetBase, 45); // Safety clamp to avoid rendering glitches
+            
+            clearInterval(operationEngineLoop);
+            operationEngineLoop = setInterval(processingTick, activeTickMiliseconds);
+        }
+
+        function captureDirectionalInputs(event) {
+            if (!executionActive) return;
+            const code = event.keyCode;
+            
+            const KEY_LEFT = 37,  W_LEFT = 65;
+            const KEY_UP = 38,    W_UP = 87;
+            const KEY_RIGHT = 39, W_RIGHT = 68;
+            const KEY_DOWN = 40,  W_DOWN = 83;
+
+            // Direct input vector locking checks to prevent immediate neck reversals
+            if ((code === KEY_LEFT || code === W_LEFT) && velocityVector.x !== 1) {
+                directionalInputBuffer = { x: -1, y: 0 };
+            }
+            else if ((code === KEY_UP || code === W_UP) && velocityVector.y !== 1) {
+                directionalInputBuffer = { x: 0, y: -1 };
+            }
+            else if ((code === KEY_RIGHT || code === W_RIGHT) && velocityVector.x !== -1) {
+                directionalInputBuffer = { x: 1, y: 0 };
+            }
+            else if ((code === KEY_DOWN || code === W_DOWN) && velocityVector.y !== -1) {
+                directionalInputBuffer = { x: 0, y: 1 };
+            }
+        }
+
+        function initializeSession() {
+            overlay.style.display = 'none';
+            executionActive = true;
+            pointScore = 0;
+            scoreTracker.textContent = pointScore;
+            activeTickMiliseconds = 120;
+
+            // Anchor center start mapping positions 
+            physicalSnakeChain = [
+                { x: 5, y: 10 },
+                { x: 4, y: 10 },
+                { x: 3, y: 10 }
+            ];
+            
+            velocityVector = { x: 1, y: 0 };
+            directionalInputBuffer = { x: 1, y: 0 };
+            itemPelletRegistry = [];
+
+            buildStructuralEnvironment();
+
+            // Set up target fruit spawn quantities based on user input configurations
+            let desiredCount = parseInt(ruleFoodAmount.value) || 1;
+            desiredCount = Math.min(Math.max(desiredCount, 1), 15); // Clamp settings bounds safety thresholds
+            ruleFoodAmount.value = desiredCount;
+
+            for(let i = 0; i < desiredCount; i++) {
+                spawnFoodItem();
+            }
+
+            drawFrame();
+            
+            clearInterval(operationEngineLoop);
+            operationEngineLoop = setInterval(processingTick, activeTickMiliseconds);
+        }
+
+        function executeGameTermination(reasonString, absoluteVictoryFlag = false) {
+            clearInterval(operationEngineLoop);
+            executionActive = false;
+
+            commitLeaderboardRecord(pointScore);
+
+            overlayTitle.textContent = absoluteVictoryFlag ? "VICTORY PARADIGM" : "TERMINATION LOGGED";
+            overlayTitle.style.color = absoluteVictoryFlag ? "#4caf50" : "#ff5252";
+            overlayDesc.innerHTML = `${reasonString}<br>Final Arena Segment Yield: <strong>${pointScore}</strong>`;
+            overlay.style.display = 'flex';
+        }
+
+        function forceTerminateRound() {
+            if (executionActive) {
+                executeGameTermination("Operator Interrupted Session Abort.");
+            }
+        }
+
+        function commitLeaderboardRecord(scoreValue) {
+            let localCacheScores = JSON.parse(localStorage.getItem('snake_engine_scores')) || [
+                { name: "AlphaBot", score: 42 },
+                { name: "DeltaCore", score: 28 },
+                { name: "SigmaUnit", score: 14 }
+            ];
+
+            localCacheScores.push({ name: "PlayerSession", score: scoreValue });
+            localCacheScores.sort((a, b) => b.score - a.score);
+            
+            // Slice array to display high standings parameters profiles 
+            localCacheScores = localCacheScores.slice(0, 5);
+            localStorage.setItem('snake_engine_scores', JSON.stringify(localCacheScores));
+            
+            renderLeaderboardUI(localCacheScores);
+        }
+
+        function renderLeaderboardUI(scoreArray) {
+            leaderboardContainer.innerHTML = "";
+            scoreArray.forEach((entry, idx) => {
+                const li = document.createElement('li');
+                li.className = `leaderboard-item ${idx === 0 ? 'top' : ''}`;
+                li.innerHTML = `<span>#0${idx + 1} ${entry.name}</span><span>${entry.score}</span>`;
+                leaderboardContainer.appendChild(li);
+            });
+
+            if(scoreArray.length > 0) {
+                localHighTracker.textContent = scoreArray[0].score;
+            }
+        }
+
+        // Window interaction event listeners
+        window.addEventListener('keydown', captureDirectionalInputs);
+        
+        // Immediate startup initialization configuration setups
+        let initialScores = JSON.parse(localStorage.getItem('snake_engine_scores')) || [
+            { name: "AlphaBot", score: 42 },
+            { name: "DeltaCore", score: 28 },
+            { name: "SigmaUnit", score: 14 }
+        ];
+        renderLeaderboardUI(initialScores);
+    </script>
+</body>
+</html>
