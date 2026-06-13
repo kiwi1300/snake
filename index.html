@@ -154,7 +154,7 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.9); }
+            0 { transform: scale(0.9); }
             100% { transform: scale(1.1); }
         }
 
@@ -574,13 +574,13 @@
 
             buildStructuralEnvironment();
 
-            // Set up target fruit spawn quantities based on user input configurations
-            let desiredCount = parseInt(ruleFoodAmount.value) || 1;
-            desiredCount = Math.min(Math.max(desiredCount, 1), 15); // Clamp settings bounds safety thresholds
-            ruleFoodAmount.value = desiredCount;
+            // Setup target fruit spawns based on configuration count
+            let desiredCount = parseInt(ruleFoodCount.value) || 1;
+            desiredCount = Math.min(Math.max(desiredCount, 1), 15); // Clamp thresholds
+            ruleFoodCount.value = desiredCount;
 
             for(let i = 0; i < desiredCount; i++) {
-                spawnFoodItem();
+                spawnItemPellet();
             }
 
             drawFrame();
@@ -617,7 +617,6 @@
             localCacheScores.push({ name: "PlayerSession", score: scoreValue });
             localCacheScores.sort((a, b) => b.score - a.score);
             
-            // Slice array to display high standings parameters profiles 
             localCacheScores = localCacheScores.slice(0, 5);
             localStorage.setItem('snake_engine_scores', JSON.stringify(localCacheScores));
             
